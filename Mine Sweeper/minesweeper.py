@@ -1,66 +1,169 @@
 import random
+import icecream as ic
+import re
+import os
+import time
 
+class Board: 
+    def __init__(self, dim_size=10, num_bombs=10):
+        self.dim_size = dim_size
+        self.num_bombs = num_bombs
+        self.board = self.create_new_board()
+        self.assign_values_to_board()
 
-class Board:
-    def __in
-        self.diz_size = diz_size
-        self.num_bombs  = num_bombs
-        self.diz_size = diz_size
-        self.num_bombs  = num_bombs
-        self.dug = set()
+        self.dug = set() # dig 1,8 {(1, 8)}
+
+    def create_new_board(self):
+        # rows and columns 
+        board = [[None for _ in range(self.dim_size)] for _ in range(self.dim_size)]
+        
+        number_of_bombs_planted = 0
+        while number_of_bombs_planted < self.num_bombs:
+            loc = random.randint(0, self.dim_size**2 - 1) # -1 as numbering Starts from 0,0
+            
+            # how did he get to this 
+            row = loc // self.dim_size 
+            col = loc % self.dim_size 
+
+            if board[row][col] == '*':
+                continue
+            board[row][col] = '*'
+            number_of_bombs_planted += 1
+
+        return board
+
+    def get_num_neighboring_bombs(self, row, col):
+
+        # 1. top left (row-1, col-1)
+        # 2. top middle (row-1, col)
+        # 3. top right (row-1, col+1)
+        # 4. left (row, col-1)
+        # 5. right (row, col+1)
+        # 6. bottom left (row+1, col-1)
+        # 7. bottom middle (row+1, col)
+        # 8. bottom right (row+1, col+1)
+
+        # ! going into this position in forLoop and dedacting the neighboring bombs  
+
+        # * max = num < iteration_num else num ( 0 < -1 ) and min = num > iteration_num else num ( 99 > 100 ) 
+
+        num_neighboring_bombs = 0
+        for r in range(max(0, row-1), min(self.dim_size -1, (row+1))+1): # * max and min not outOf board
+            for c in range(max(0, col-1), min(self.dim_size -1, (col+1))+1):
+
+                if r == row and c == col:
+                    continue
+                if self.board[r][c] == '*':
+                    num_neighboring_bombs += 1
+
+        return num_neighboring_bombs
 
 
     def assign_values_to_board(self):
-        for r in self.diz_size:
-            for c in sel
+        for r in range(self.dim_size):
+            for c in range(self.dim_size):
 
-
-                self.board[r][c] = self.get_num_neighboring_bombs(r, c)
-
-        for r in self.diz_size:
-            for c in self.diz_size:
-
-    def make_board(self):
+                if self.board[r][c] == '*':
                     continue
-        board = [[None for _ in range(self.diz_size)] for _ in range(self.diz_size)]
+                self.board[r][c] = self.get_num_neighboring_bombs(r, c)
+                
+    def dig(self, row, col):
 
+        self.dug.add((row, col))
 
-        while bombs_planted < self.num_bombs:
-            loc = random.randint(0, self
-            row = loc // self.diz_size
-            
+        if self.board[row][col] == '*':
+            return False
+        elif self.board[row][col] > 0: 
+            return True
+        
+        for r in range(max(0, row-1), min(self.dim_size -1, (row+1))+1): 
+            for c in range(max(0, col-1), min(self.dim_size -1, (col+1))+1):
+                if (r, c) in self.dug:
+                    continue
+                self.dig(r, c)
+        return True
+    
+    def __str__(self):
+        
+        visible_board = [[None for _ in range(self.dim_size)] for _ in range(self.dim_size)]
+        for row in range(self.dim_size):
+            for col in range(self.dim_size):
+                if (row,col) in self.dug:
+                    visible_board[row][col] = str(self.board[row][col])
+                else:
+                    visible_board[row][col] = ' '
+        
+        # put this together in a string
+        string_rep = ''
+        # get max column widths for printing
+        widths = []
+        for idx in range(self.dim_size):
+            columns = map(lambda x: x[idx], visible_board)
+            widths.append(
+                len(
+                    max(columns, key = len)
+                )
+            )
 
-    def jls_extract_def(self):
-        return '*'
+        # print the csv strings
+        indices = [i for i in range(self.dim_size)]
+        indices_row = '   '
+        cells = []
+        for idx, col in enumerate(indices):
+            format = '%-' + str(widths[idx]) + "s"
+            cells.append(format % (col))
+        indices_row += '  '.join(cells)
+        indices_row += '  \n'
+        
+        for i in range(len(visible_board)):
+            row = visible_board[i]
+            string_rep += f'{i} |'
+            cells = []
+            for idx, col in enumerate(row):
+                format = '%-' + str(widths[idx]) + "s"
+                cells.append(format % (col))
+            string_rep += ' |'.join(cells)
+            string_rep += ' |\n'
 
-            if board[row]
+        str_len = int(len(string_rep) / self.dim_size)
+        string_rep = indices_row + '-'*str_len + '\n' + string_rep + '-'*str_len
 
+        return string_rep
 
-            board[row][col] = '*'
+ 
 
-
-        return board
-
-def play(diz_size=10, num_bombs=10):
+safe = True
+def play(dim_size=10, num_bombs=10):
     # step 1: create a board and plant the bombs
+    mineBoard = Board(dim_size, num_bombs)
+    
     # step 2: Ask the user to were they want to dig
-    # step 3a: if it is bomb then game over
-    # step 3b: if not bomb then dig re
-    # step 4: if no squares left then Victory !
+    while len(mineBoard.dug) < mineBoard.dim_size**2 - mineBoard.num_bombs:
+        print(mineBoard)
+        user_input = re.split(',(\\s)*', input('Where you want to dig: '))
+        row, col = int(user_input[0]), int(user_input[-1])
+        print()
+        if row < 0 or row >= mineBoard.dim_size or col < 0 or col > mineBoard.dim_size: 
+            print('Invalid Input try again? ')
+            time.sleep(2)
+            os.system('cls')
+            continue
+        safe = mineBoard.dig(row, col)
+        os.system('cls')
+        # step 3a: if it is bomb then game over
+        if not safe:
+            break;
+        
+    if safe:
+        print('CONGRATULATIONS !!!')
+    else:
+        os.system('cls')
+        print('Sorry Game Over :( ')
+        print()
+        mineBoard.dug = [(r, c) for r in range(mineBoard.dim_size) for c in range(mineBoard.dim_size)]
+        print(mineBoard)
+    # ic(mineBoard.board)
     pass
 
-
-
-                continue
-
-self.def()
-
-
-        return board
-
-
-
-
-
-
-
+if __name__ == '__main__':
+    play()
