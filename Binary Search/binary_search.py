@@ -38,9 +38,9 @@ sorted_list = set()
 while len(sorted_list) < length:
     sorted_list.add(random.randint(-4*length, 4*length))  
 sorted_list = sorted(list(sorted_list))
-targate =  1000
+target =  1000
 
 
-result = binary_search(sorted_list, targate)
+result = binary_search(sorted_list, target)
 print(result)
 
